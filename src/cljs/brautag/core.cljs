@@ -1,13 +1,15 @@
 (ns brautag.core
-  (:require [reagent.core :as r]
-            [re-frame.core :as rf]
-            [secretary.core :as secretary]
+  (:require [ajax.core :refer [GET POST]]
+            [brautag.ajax :refer [load-interceptors!]]
+            [brautag.events]
             [goog.events :as events]
             [goog.history.EventType :as HistoryEventType]
+            [goog.string :as gstring]
+            [goog.string.format]
             [markdown.core :refer [md->html]]
-            [ajax.core :refer [GET POST]]
-            [brautag.ajax :refer [load-interceptors!]]
-            [brautag.events])
+            [reagent.core :as r]
+            [re-frame.core :as rf]
+            [secretary.core :as secretary])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -27,7 +29,8 @@
    [:div#collapsing-navbar.collapse.navbar-collapse
     [:ul.nav.navbar-nav.mr-auto
      [nav-link "#/" "Home" :home]
-     [nav-link "#/about" "About" :about]]]])
+     [nav-link "#/about" "About" :about]
+     [nav-link "#/timer" "Timer" :timer]]]])
 
 (defn about-page []
   [:div.container
@@ -44,13 +47,49 @@
       [:div {:dangerouslySetInnerHTML
              {:__html (md->html docs)}}]])])
 
+(defn timer []
+  (when-let [timer-start? @(rf/subscribe [:timer-start?])]
+    (let [timer-val @(rf/subscribe [:timer-val])]
+      (if timer-start?
+        (js/setTimeout #(rf/dispatch [:update-timer timer-val]) 1000))))
+  (let [timer-val @(rf/subscribe [:timer-val])
+        mins (quot timer-val 60)
+        secs (- timer-val (* mins 60))]
+    [:div.row 
+     [:h2 (str (gstring/format "%02d:%02d" mins secs))]]))
+
+(defn timer-page []
+  [:div.container
+   [:div.row
+    [:button
+     {:on-click
+      #(rf/dispatch [:start-timer])}
+     "Start timer!"]
+    [:button
+     {:on-click
+      #(rf/dispatch [:stop-timer])}
+     "Stop timer!"]
+    [:button
+     {:on-click
+      #(rf/dispatch [:reset-timer])}
+     "Reset timer!"]]
+   [timer]])
+
+(defn state-blob
+  "This is a state-blob for debugging"
+  []
+  [:div
+   (pr-str @(rf/subscribe [:app-db]))])
+
 (def pages
   {:home #'home-page
-   :about #'about-page})
+   :about #'about-page
+   :timer #'timer-page})
 
 (defn page []
   [:div
    [navbar]
+   [state-blob]
    [(pages @(rf/subscribe [:page]))]])
 
 ;; -------------------------
@@ -62,6 +101,9 @@
 
 (secretary/defroute "/about" []
   (rf/dispatch [:set-active-page :about]))
+
+(secretary/defroute "/timer" []
+  (rf/dispatch [:set-active-page :timer]))
 
 ;; -------------------------
 ;; History
