@@ -5,19 +5,24 @@
 ;;dispatchers
 
 (reg-event-db
-  :initialize-db
-  (fn [_ _]
-    db/default-db))
+ :initialize-db
+ (fn [_ _]
+   db/default-db))
 
 (reg-event-db
-  :set-active-page
-  (fn [db [_ page]]
-    (assoc db :page page)))
+ :set-active-page
+ (fn [db [_ page]]
+   (assoc db :page page)))
 
 (reg-event-db
-  :set-docs
-  (fn [db [_ docs]]
-    (assoc db :docs docs)))
+ :set-docs
+ (fn [db [_ docs]]
+   (assoc db :docs docs)))
+
+(reg-event-db
+ :set-timer-events
+ (fn [db [_ timer-events]]
+   (assoc db :timer-events timer-events)))
 
 (reg-event-db
  :start-timer
@@ -46,14 +51,14 @@
    db))
 
 (reg-sub
-  :page
-  (fn [db _]
-    (:page db)))
+ :page
+ (fn [db _]
+   (:page db)))
 
 (reg-sub
-  :docs
-  (fn [db _]
-    (:docs db)))
+ :docs
+ (fn [db _]
+   (:docs db)))
 
 (reg-sub
  :timer-start?
@@ -64,3 +69,8 @@
  :timer-val
  (fn [db _]
    (:timer-val db)))
+
+(reg-sub
+ :timer-events
+ (fn [db _]
+   (:timer-events db)))

@@ -41,13 +41,9 @@
 (defn home-page []
   [:div.container
    [:div.row>div.col-sm-12
-    [:h2.alert.alert-info "Tip: try pressing CTRL+H to open re-frame tracing menu"]]
-   (when-let [docs @(rf/subscribe [:docs])]
-     [:div.row>div.col-sm-12
-      [:div {:dangerouslySetInnerHTML
-             {:__html (md->html docs)}}]])])
+    [:h2.alert.alert-info "Tip: try pressing CTRL+H to open re-frame tracing menu"]]])
 
-(defn timer []
+(defn timer-clock []
   (when-let [timer-start? @(rf/subscribe [:timer-start?])]
     (let [timer-val @(rf/subscribe [:timer-val])]
       (if timer-start?
@@ -55,25 +51,46 @@
   (let [timer-val @(rf/subscribe [:timer-val])
         mins (quot timer-val 60)
         secs (- timer-val (* mins 60))]
-    [:div.row 
-     [:h2 (str (gstring/format "%02d:%02d" mins secs))]]))
+    [:div.row.d-flex.justify-content-center
+     [:div.col
+      [:h2.text-center (str (gstring/format "%02d:%02d" mins secs))]]]))
+
+(defn timer []
+  [:div.col-sm
+   [:div.row.d-flex.justify-content-between
+    [:div.col-sm
+     [:button.btn.btn-primary
+      {:on-click
+       #(rf/dispatch [:start-timer])}
+      "Start timer!"]]
+    [:div.col-sm
+     [:button.btn.btn-secondary
+      {:on-click
+       #(rf/dispatch [:stop-timer])}
+      "Stop timer!"]]
+    [:div.col-sm
+     [:button.btn.btn-danger
+      {:on-click
+       #(rf/dispatch [:reset-timer])}
+      "Reset timer!"]]]
+   [timer-clock]])
+
+(defn events []
+  [:div.col-md
+   (doall
+    (for [{:keys [id name instructions]} @(rf/subscribe [:timer-events])]
+      (list
+   [:div.row {:key id}
+    [:div.card
+     [:div.card-body
+      [:div.card-header name]
+      [:div.card-text  instructions]]]])))])
 
 (defn timer-page []
   [:div.container
    [:div.row
-    [:button
-     {:on-click
-      #(rf/dispatch [:start-timer])}
-     "Start timer!"]
-    [:button
-     {:on-click
-      #(rf/dispatch [:stop-timer])}
-     "Stop timer!"]
-    [:button
-     {:on-click
-      #(rf/dispatch [:reset-timer])}
-     "Reset timer!"]]
-   [timer]])
+    [events]
+    [timer]]])
 
 (defn state-blob
   "This is a state-blob for debugging"
@@ -119,7 +136,12 @@
 ;; -------------------------
 ;; Initialize app
 (defn fetch-docs! []
-  (GET "/docs" {:handler #(rf/dispatch [:set-docs %])}))
+  #_(GET "/docs" {:handler #(rf/dispatch [:set-docs %])}))
+
+(defn fetch-timer-events! []
+  (rf/dispatch [:set-timer-events [{:id 1 :name "Add extract 1" :instructions "Slowly pour the extract into boiling water, stirring occastionally."} 
+                                   {:id 2 :name "Add cascade hops" :instructions "Add the cascade hops slowly, being aware of overboils."} 
+                                   {:id 3 :name "Add citra hops" :instructions "Add the citra hops slowly, being aware of overboils"}]]))
 
 (defn mount-components []
   (rf/clear-subscription-cache!)
@@ -128,6 +150,7 @@
 (defn init! []
   (rf/dispatch-sync [:initialize-db])
   (load-interceptors!)
-  (fetch-docs!)
+  #_(fetch-docs!)
+  (fetch-timer-events!)
   (hook-browser-navigation!)
   (mount-components))
